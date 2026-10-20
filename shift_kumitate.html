@@ -201,6 +201,17 @@ details summary{cursor:pointer;font-weight:700}
 <body>
 <div class="wrap">
 
+  <!-- 利用コード -->
+  <section id="p-lic" class="panel" hidden>
+    <header><h1>シフトくみたて</h1><span class="store">利用コードの入力</span></header>
+    <div class="box">
+      <label class="f">利用コード<input type="text" id="lc-code" placeholder="例：KMT-AB2C-D3EF" autocomplete="off" autocapitalize="characters" spellcheck="false"></label>
+      <div class="row"><button class="btn" id="lc-go">はじめる</button><p class="toast" id="lc-msg"></p></div>
+      <p class="hint">購入したときにお渡しした利用コードを入れてください。入力は最初の1回だけです。</p>
+      <p class="hint">スタッフの方は、店長からLINEで届いたリンクを開いてください。</p>
+    </div>
+  </section>
+
   <!-- 暗証番号 -->
   <section id="p-lock" class="panel" hidden>
     <header><h1 id="lk-title">シフト作成</h1><span class="store">店長用</span></header>
@@ -717,17 +728,31 @@ function sampleMonth(m){
   return st;
 }
 function save(){
-  DATA.S=S;if(M){DATA.months[M.month]=M;DATA.cur=M.month;}
+  DATA.S=S;DATA.lic=LS.get(LKEY)||DATA.lic||'';if(M){DATA.months[M.month]=M;DATA.cur=M.month;}
   const ok=LS.set(DKEY,DATA);
   const el=$('m-status');if(el){el.textContent=ok?'このスマホの中に保存しました。':'保存できませんでした。ブラウザの設定（プライベートモードなど）を確認してください。';el.style.color=ok?'var(--ok)':'var(--no)';}
 }
 function autoURL(){try{if(/^https?:$/.test(location.protocol)&&!/claude|anthropic|usercontent/.test(location.hostname))return location.origin+location.pathname;}catch(e){}return '';}
 const baseURL=()=>(S.url||autoURL()).trim();
 function mkLink(key,code){const b=baseURL()||'（スタッフ用ページのURL）';return `${b}${b.includes('?')?'&':'?'}${key}=${code}`;}
-function showOnly(id){['p-lock','p-welcome','p-set','p-mgr','p-staff'].forEach(x=>$(x).hidden=x!==id);$('fab').hidden=id!=='p-mgr';}
+function showOnly(id){['p-lic','p-lock','p-welcome','p-set','p-mgr','p-staff'].forEach(x=>$(x).hidden=x!==id);$('fab').hidden=id!=='p-mgr';}
+
+/* --- 利用コード（お店ごとに1つ。形：KMT-XXXX-YYYY） --- */
+const LKEY='kshift-lic',LIC_SECRET='kmt-2026-cocina-7f3a',LIC_AB='23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+function cyrb53(str,seed=0){let h1=0xdeadbeef^seed,h2=0x41c6ce57^seed;for(let i=0;i<str.length;i++){const ch=str.charCodeAt(i);h1=Math.imul(h1^ch,2654435761);h2=Math.imul(h2^ch,1597334677);}
+  h1=Math.imul(h1^(h1>>>16),2246822507);h1^=Math.imul(h2^(h2>>>13),3266489909);h2=Math.imul(h2^(h2>>>16),2246822507);h2^=Math.imul(h1^(h1>>>13),3266489909);return 4294967296*(2097151&h2)+(h1>>>0);}
+function licCheck(id){let n=cyrb53(LIC_SECRET+id),s='';for(let i=0;i<4;i++){s+=LIC_AB[n%32];n=Math.floor(n/32);}return s;}
+const normLic=t=>String(t||'').toUpperCase().replace(/[^0-9A-Z]/g,'').replace(/^KMT/,'');
+function validLic(t){const c=normLic(t);if(c.length!==8||[...c].some(ch=>!LIC_AB.includes(ch)))return false;return licCheck(c.slice(0,4))===c.slice(4);}
+const fmtLic=t=>{const c=normLic(t);return `KMT-${c.slice(0,4)}-${c.slice(4)}`;};
+$('lc-go').onclick=()=>{const v=$('lc-code').value;if(!validLic(v)){flash($('lc-msg'),'利用コードがちがいます。もう一度確かめてください',true);return;}
+  LS.set(LKEY,fmtLic(v));bootMgr();};
+$('lc-code').onkeydown=e=>{if(e.key==='Enter')$('lc-go').click();};
 
 /* --- 起動 --- */
 function bootMgr(){
+  if(!validLic(LS.get(LKEY))){const d=LS.get(DKEY);
+    if(d&&validLic(d.lic))LS.set(LKEY,fmtLic(d.lic));else{showOnly('p-lic');$('lc-code').focus();return;}}
   DATA=LS.get(DKEY);
   if(!DATA||!DATA.S){openWelcome();return;}
   S=DATA.S;buildPM();
@@ -1202,7 +1227,7 @@ function loadBackup(txt,msgEl){
   const mm=String(txt).match(/#KSHIFT\|v1\|([A-Za-z0-9_-]+)/);
   if(!mm){flash(msgEl,'バックアップの文が見つかりませんでした',true);return false;}
   let d;try{d=JSON.parse(b64d(mm[1]));if(!d.S||!d.months)throw 0;}catch(e){flash(msgEl,'文が途中で切れているようです。全部コピーし直してください',true);return false;}
-  DATA=d;LS.set(DKEY,DATA);SS.set('kshift-ok','1');return true;
+  DATA=d;if(validLic(d.lic))LS.set(LKEY,fmtLic(d.lic));LS.set(DKEY,DATA);SS.set('kshift-ok','1');return true;
 }
 $('m-bkout').onclick=()=>{save();$('m-bk').textContent=bkText();$('m-bk').hidden=false;$('m-bkrow').hidden=false;};
 $('m-bkcopy').onclick=()=>copyText($('m-bk').textContent,$('m-toast6'),$('m-bk'));
