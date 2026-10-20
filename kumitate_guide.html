@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<title>シフトくみたて 使い方</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap">
+<style>
+/* Layout: one reading column; two guides (manager / staff) switched by tabs */
+:root{
+  --bg:#f5f4ef; --surface:#ffffff; --line:#dedbd0; --fg:#23251f; --muted:#6d6f63;
+  --accent:#2f5d50; --accent-bg:#e3eee9; --warn-bg:#fdf3dc;
+  --font:"Zen Kaku Gothic New","Hiragino Sans","Noto Sans JP",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#171915; --surface:#21241e; --line:#373a31; --fg:#e8e8e0; --muted:#9a9c8f;
+  --accent:#7fb7a5; --accent-bg:#1f2e28; --warn-bg:#33291a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#171915; --surface:#21241e; --line:#373a31; --fg:#e8e8e0; --muted:#9a9c8f;
+  --accent:#7fb7a5; --accent-bg:#1f2e28; --warn-bg:#33291a; color-scheme:dark}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--font);font-size:15px;line-height:1.75;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px 56px}
+.wrap{max-width:680px;width:100%;margin:0 auto;display:flex;flex-direction:column;gap:16px;min-width:0}
+.wrap>*{min-width:0}
+h1{font-size:22px;margin:0;text-wrap:balance}
+h2{font-size:18px;margin:0;text-wrap:balance}
+h3{font-size:15px;margin:0}
+p{margin:0}
+.lead{color:var(--muted);font-size:14px}
+.tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:4px}
+.tabs button{font:inherit;text-align:center;font-weight:700;color:var(--muted);background:none;border:0;border-radius:9px;padding:8px 4px;cursor:pointer;touch-action:manipulation}
+.tabs button[aria-pressed="true"]{background:var(--accent);color:var(--bg)}
+.tabs button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.box{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:10px;min-width:0}
+ol,ul{margin:0;padding-left:1.4em;display:flex;flex-direction:column;gap:8px}
+ol ul{margin-top:4px;gap:4px}
+li::marker{color:var(--accent);font-weight:700}
+b{font-weight:700}
+.note{background:var(--warn-bg);border-radius:10px;padding:10px 12px;font-size:14px}
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:14px;min-width:420px}
+th,td{text-align:left;vertical-align:top;padding:8px 10px;border-bottom:1px solid var(--line)}
+th{background:var(--accent-bg);font-size:13px}
+tr:last-child td{border-bottom:0}
+.chip{display:inline-block;font-weight:700;border-radius:6px;padding:0 7px;background:var(--accent-bg);color:var(--accent)}
+.back{font-size:14px;color:var(--accent)}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header><h1>シフトくみたて 使い方</h1></header>
+  <nav class="tabs" aria-label="使い方の切り替え">
+    <button type="button" id="tab-t">店長向け</button>
+    <button type="button" id="tab-s">スタッフ向け</button>
+  </nav>
+
+  <!-- 店長向け -->
+  <section id="v-tencho" class="wrap" style="gap:16px">
+    <p class="lead">スタッフの希望集めから、決まったシフトの共有まで、LINEとこのページだけでできます。店長がやるのは、最初の準備（1回だけ）と、毎月の5つの作業です。</p>
+
+    <div class="box">
+      <h2>最初の準備（1回だけ）</h2>
+      <ol>
+        <li><b>ホーム画面に追加する</b>：店長のスマホのSafariでページを開き、共有ボタン →「ホーム画面に追加」を押します。アプリのように開けて、データも消えにくくなります。</li>
+        <li><b>利用コードを入れる</b>：お渡しした利用コード（KMT-から始まる文字）を入力します。最初の1回だけです。</li>
+        <li><b>お店の名前と形を選ぶ</b>：「飲食店（ランチ・ディナー）」「早番・遅番」「1日1つの枠」から近いものを選びます。迷ったら「見本のスタッフを入れて試す」にチェックを入れて、操作を試してみてください。</li>
+        <li><b>お店の設定をする</b>：下の4つを、お店に合わせて直します。あとからいつでも「お店の設定」ボタンで変えられます。</li>
+      </ol>
+      <div class="tbl"><table>
+        <tr><th>設定</th><th>決めること</th><th>例</th></tr>
+        <tr><td>営業の枠</td><td>人数を数える時間の区切り（最大4つ）</td><td>ランチ 11:00〜15:00、ディナー 17:00〜23:00</td></tr>
+        <tr><td>出勤パターン</td><td>スタッフが選ぶ出勤時間と、表に出る短い文字</td><td>昼 10:30〜15:00、夜 18:00〜23:00</td></tr>
+        <tr><td>必要人数と定休日</td><td>曜日ごと・枠ごとの人数、休みの曜日</td><td>金土のディナーは3人、水曜定休</td></tr>
+        <tr><td>暗証番号（なしでも可）</td><td>店長画面を開くための番号</td><td>お店の共用スマホで使うとき</td></tr>
+      </table></div>
+      <p class="lead">出勤パターンが、どの枠の人数に数えられるかは、時間から自動で決まります。「どの枠にも重なっていません」と出たら、時間を見直してください。</p>
+    </div>
+
+    <div class="box">
+      <h2>毎月の流れ</h2>
+      <p>画面の上の「シフトを作る月」で月を選んでから、①〜⑤を順にくり返します。</p>
+      <ol>
+        <li><b>希望提出のリンクを送る</b>
+          <ul>
+            <li>先に、日ごとのカードで臨時休業・特別な時間・予定（団体予約など）を入れておきます。</li>
+            <li>「LINEで送る」を押して、スタッフのグループを選びます。「スタッフの画面を見る」で、送る前に見え方を確認できます。</li>
+          </ul></li>
+        <li><b>届いた希望を取り込む</b>
+          <ul>
+            <li>スタッフから届いたメッセージをまとめてコピーして貼り付け、「取り込む」を押します。何人分でも一度に貼ってOKです。</li>
+            <li>同じ人が出し直したときは、変わるところが表示されるので、確かめてから上書きします。</li>
+          </ul></li>
+        <li><b>組み立てる</b>
+          <ul>
+            <li>「空きを自動でうめる」を押すと、希望が合う人の中から、その月の時間が少ない人を優先して入れます。</li>
+            <li>日ごとのカードで名前をタップすると、入れる・外す・時間を変えるができます。人が足りない日は、カードの左が赤くなります。</li>
+          </ul></li>
+        <li><b>追加募集（足りないときだけ）</b>
+          <ul>
+            <li>足りない枠が並ぶので、募集したい枠にチェックを入れて「LINEで送る」を押します。</li>
+            <li>返事を②に貼ると、「入れる」と答えた人に<span class="chip">追加募集</span>の印が付くので、タップして入れます。</li>
+          </ul></li>
+        <li><b>できたシフトを共有する</b>
+          <ul>
+            <li>「画像にする」で完成表の画像を作り、LINEで送ります。前半・後半の2枚にもできます。</li>
+            <li>「自分のシフトを見るリンク」を送ると、スタッフは名前を選ぶだけで自分の出勤日を確認できます。シフトを直したら送り直してください。</li>
+          </ul></li>
+      </ol>
+    </div>
+
+    <div class="box">
+      <h2>大事な注意</h2>
+      <p class="note">データは<b>店長のスマホのブラウザの中だけ</b>に保存されます。サーバーには送られないので、スマホをなくしたり、ブラウザのデータを消したりすると、元に戻せません。</p>
+      <ul>
+        <li><b>月に1回はバックアップする</b>：画面の下の「データの書き出し・読み込み」→「データを書き出す」で出た文をコピーし、LINEのKeepメモなどに貼っておきます。全部の月と設定が入っています。</li>
+        <li><b>スマホを替えるとき</b>：前のスマホで書き出した文を、新しいスマホの最初の画面の「前のスマホのデータを読み込む」に貼ると、続きから使えます。</li>
+        <li><b>1つのスマホで使えるのは1店舗分</b>です。2店舗を管理するときは、別のスマホか別のブラウザを使ってください。</li>
+      </ul>
+    </div>
+
+    <div class="box">
+      <h2>困ったとき</h2>
+      <div class="tbl"><table>
+        <tr><th>こんなとき</th><th>やること</th></tr>
+        <tr><td>スタッフが「リンクが読み込めません」と言う</td><td>リンク全体をタップし直してもらう。それでもだめなら、画面の「読み込み直す」を押してもらう</td></tr>
+        <tr><td>希望を貼っても「見つかりませんでした」と出る</td><td>スタッフのメッセージを途中で切らずに、最後の行まで全部コピーする</td></tr>
+        <tr><td>時間の計算が合わない</td><td>「お店の設定」で、出勤パターンの時間と休憩を確認する</td></tr>
+        <tr><td>祝日なのに営業日（または休み）になっている</td><td>日ごとのカードの「〇〇を営業にする／休みにする」で、その日だけ切り替える</td></tr>
+      </table></div>
+    </div>
+  </section>
+
+  <!-- スタッフ向け -->
+  <section id="v-staff" class="wrap" style="gap:16px" hidden>
+    <p class="lead">シフトの希望は、店長からLINEで届くリンクを開いて出します。アプリのインストールやログインはいりません。</p>
+
+    <div class="box">
+      <h2>希望の出し方</h2>
+      <ol>
+        <li><b>リンクを開く</b>：店長からLINEで届いたリンクをタップします。お休みの日は、カレンダーで斜線になっています。</li>
+        <li><b>名前を入れる</b>：毎回同じ書き方にしてください（「さくら」と「佐倉」がまざると、別の人になります）。2回目からは自動で入ります。</li>
+        <li><b>時間を選んで、日付をタップ</b>：上のボタンで出られる時間を選び、カレンダーの日付をタップします。
+          <ul>
+            <li><b>昼・夜など</b>：その時間で出られる日</li>
+            <li><b>○（どれでもOK）</b>：どの時間でも出られる日</li>
+            <li><b>×（休み）</b>：休みたい日</li>
+            <li><b>時間（自分で入力）</b>：「12:00〜16:00」のように、決まった時間だけ出られる日</li>
+            <li>同じものでもう一度タップすると消えます。曜日の文字（日・月…）をタップすると、その曜日をまとめて塗れます。</li>
+          </ul></li>
+        <li><b>確認して送る</b>：下の「確認」で一覧を見てから「送る文を作る」→「LINEで店長に送る」を押し、店長を選んで送信します。</li>
+      </ol>
+      <p class="lead">メモ欄には「テスト期間は早めに上がりたい」など、店長に伝えたいことを書けます。途中で閉じても、入れた内容は残っています。出し直すときは、同じリンクから直して、もう一度送ってください。</p>
+    </div>
+
+    <div class="box">
+      <h2>追加募集とシフトの確認</h2>
+      <p><b>追加募集が来たとき</b>：人が足りない日のリンクが届きます。開いて名前を入れると、あなたに聞きたい日だけが並びます。日ごとに「入れる（時間を選ぶ）」「入れない」「未定」を選び、「LINEで店長に送る」で返事をします。全部に答えなくても大丈夫です。</p>
+      <p><b>シフトが決まったとき</b>：「自分のシフトを見る」リンクが届きます。開いて名前を選ぶと、出勤日・時間・その月の合計時間が一覧で見られます。下の表で全員のシフトも確認できます。</p>
+    </div>
+
+    <div class="box">
+      <h2>困ったとき</h2>
+      <div class="tbl"><table>
+        <tr><th>こんなとき</th><th>やること</th></tr>
+        <tr><td>「リンクが読み込めません」と出る</td><td>LINEのメッセージを開き直して、リンク全体をタップする。それでもだめなら「読み込み直す」を押す</td></tr>
+        <tr><td>「ブラウザが古いため開けません」と出る</td><td>iPhoneならiOSを最新にするか、SafariやChromeでリンクを開く</td></tr>
+        <tr><td>「LINEで店長に送る」が開かない</td><td>「コピーする」を押して、LINEの店長とのトークに貼り付けて送る</td></tr>
+        <tr><td>送ったあとに予定が変わった</td><td>同じリンクから直して、もう一度送る（店長の画面で新しい方に上書きされます）</td></tr>
+      </table></div>
+    </div>
+  </section>
+</div>
+
+<script>
+/* タブはボタンで直接切り替える（ブラウザによって #staff の切り替えが動かないことがあるため） */
+function show(st){
+  document.getElementById('v-staff').hidden=!st;document.getElementById('v-tencho').hidden=st;
+  document.getElementById('tab-s').setAttribute('aria-pressed',String(st));
+  document.getElementById('tab-t').setAttribute('aria-pressed',String(!st));}
+function go(st){show(st);try{history.replaceState(null,'',st?'#staff':'#tencho');}catch(e){}window.scrollTo({top:0});}
+document.getElementById('tab-t').addEventListener('click',()=>go(false));
+document.getElementById('tab-s').addEventListener('click',()=>go(true));
+window.addEventListener('hashchange',()=>show(location.hash==='#staff'));
+show(location.hash==='#staff');
+</script>
+
+</body>
+</html>
