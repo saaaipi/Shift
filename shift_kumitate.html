@@ -261,6 +261,13 @@ details summary{cursor:pointer;font-weight:700}
       <label class="f">お店の名前<input type="text" id="s-store" autocomplete="off"></label>
     </div>
     <div class="box">
+      <h2>シフトを組む区切り</h2>
+      <p class="hint">何日分ずつシフトを組むかを選びます。</p>
+      <div class="tpls" id="s-period"></div>
+      <label class="f" id="s-anchorbox" hidden>始まりの日（この日の曜日から区切ります）<input type="date" id="s-anchor"></label>
+      <p class="note" id="s-periodhint"></p>
+    </div>
+    <div class="box">
       <h2>営業の枠</h2>
       <p class="hint">必要人数を数える時間の区切りです（例：ランチとディナー、早番と遅番）。4つまで。</p>
       <div class="srows" id="s-slots"></div>
@@ -292,7 +299,7 @@ details summary{cursor:pointer;font-weight:700}
   <section id="p-mgr" class="panel" hidden>
     <header><h1 id="m-h1">シフト作成</h1><div class="row"><a class="btn ghost small" href="kumitate_guide.html">使い方</a><button class="btn ghost small" id="m-set">お店の設定</button></div></header>
     <div class="box">
-      <label class="f">シフトを作る月<select id="m-month"></select></label>
+      <label class="f">シフトを作る期間<select id="m-month"></select></label>
       <p class="hint" id="m-status"></p>
     </div>
     <div class="sample" id="m-sample" hidden>
@@ -330,7 +337,7 @@ details summary{cursor:pointer;font-weight:700}
         <button class="btn" id="m-auto">空きを自動でうめる</button>
         <button class="btn danger small" id="m-reset">割り当てを全部外す</button>
       </div>
-      <p class="hint">自動は「希望が合う人」の中から「今月の時間が少ない人」を優先して入れます。決めた割り当ては変えません。入れた人をタップすると時間を変えられます。</p>
+      <p class="hint">自動は「希望が合う人」の中から「この期間の時間が少ない人」を優先して入れます。決めた割り当ては変えません。入れた人をタップすると時間を変えられます。</p>
       <div class="row minor"><label class="row"><input type="checkbox" id="m-onlyshort"> 足りない日だけ表示</label>
         <select id="m-range" style="width:auto" aria-label="表示する日"><option value="all">全部の日</option><option value="h1">前半（1〜15日）</option><option value="h2">後半（16日〜）</option><option value="we">土日祝だけ</option><option value="wd">平日だけ</option></select></div>
       <div class="legend" id="m-legend"></div>
@@ -377,7 +384,7 @@ details summary{cursor:pointer;font-weight:700}
       <details>
         <summary>データの書き出し・読み込み（バックアップ）</summary>
         <div style="height:8px"></div>
-        <p class="hint">データはこのスマホのブラウザの中だけに保存されています。全部の月と設定を文字にして書き出せるので、LINEのKeepメモなどに貼っておいてください。スマホを替えるときも、これを新しいスマホで読み込めば続きから使えます。</p>
+        <p class="hint">データはこのスマホのブラウザの中だけに保存されています。全部の期間と設定を文字にして書き出せるので、LINEのKeepメモなどに貼っておいてください。スマホを替えるときも、これを新しいスマホで読み込めば続きから使えます。</p>
         <div class="row"><button class="btn small" id="m-bkout">データを書き出す</button></div>
         <pre class="out" id="m-bk" hidden></pre>
         <div class="row" id="m-bkrow" hidden><button class="btn small" id="m-bkcopy">コピーする</button><p class="toast" id="m-toast6"></p></div>
@@ -426,13 +433,40 @@ const LS={get(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return 
 const SS={get(k){try{return sessionStorage.getItem(k)}catch(e){return null}},set(k,v){try{sessionStorage.setItem(k,v)}catch(e){}}};
 const ym=d=>d.getFullYear()+'-'+pad(d.getMonth()+1);
 function monthOffset(n){const t=new Date();return ym(new Date(t.getFullYear(),t.getMonth()+n,1));}
-function daysIn(m){const[y,mo]=m.split('-').map(Number);return new Date(y,mo,0).getDate();}
-function wday(m,d){const[y,mo]=m.split('-').map(Number);return new Date(y,mo-1,d).getDay();}
-function mLabel(m){const[y,mo]=m.split('-');return `${y}年${+mo}月`;}
-const mShort=m=>`${+m.split('-')[1]}月`;
+/* 期間（シフトを組む区切り）。1か月は "2026-11"、それ以外は "開始日~日数"（例 "2026-11-02~14"） */
+const ymd=dt=>`${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}`;
+const isLegacy=k=>/^\d{4}-\d{2}$/.test(k);
+function pStart(k){if(isLegacy(k)){const[y,m]=k.split('-').map(Number);return new Date(y,m-1,1);}const[y,m,d]=k.slice(0,10).split('-').map(Number);return new Date(y,m-1,d);}
+function daysIn(k){if(isLegacy(k)){const[y,m]=k.split('-').map(Number);return new Date(y,m,0).getDate();}return Math.max(1,Math.min(31,+k.split('~')[1]||7));}
+function dateAt(k,d){const s=pStart(k);return new Date(s.getFullYear(),s.getMonth(),s.getDate()+d-1);}
+function wday(k,d){return dateAt(k,d).getDay();}
+const oneMonth=k=>{const a=dateAt(k,1),b=dateAt(k,daysIn(k));return a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth();};
+function mLabel(k){if(isLegacy(k)){const[y,m]=k.split('-');return `${y}年${+m}月`;}
+  const n=daysIn(k),a=dateAt(k,1),b=dateAt(k,n),y=a.getFullYear(),m=a.getMonth()+1;
+  if(a.getDate()===1&&n===15)return `${y}年${m}月前半`;
+  if(a.getDate()===16&&b.getMonth()===a.getMonth()&&dateAt(k,n+1).getDate()===1)return `${y}年${m}月後半`;
+  return `${y}年${m}/${a.getDate()}〜${b.getMonth()+1}/${b.getDate()}`;}
+const mShort=k=>mLabel(k).replace(/^\d+年/,'');
+const nextMonday=()=>{const t=new Date();return new Date(t.getFullYear(),t.getMonth(),t.getDate()+((8-t.getDay())%7||7));};
+function perType(){return (S&&S.period&&S.period.type)||'month';}
+function perAnchor(){const a=S&&S.period&&S.period.anchor;if(a&&/^\d{4}-\d{2}-\d{2}$/.test(a)){const[y,m,d]=a.split('-').map(Number);return new Date(y,m-1,d);}return nextMonday();}
+function periodAt(dt,n){
+  const t=perType();
+  if(t==='half'){const i=dt.getFullYear()*24+dt.getMonth()*2+(dt.getDate()>=16?1:0)+n,y=Math.floor(i/24),r=i-y*24,mo=Math.floor(r/2);
+    const len=new Date(y,mo+1,0).getDate();return r%2?`${y}-${pad(mo+1)}-16~${len-15}`:`${y}-${pad(mo+1)}-01~15`;}
+  if(t==='1w'||t==='2w'){const L=t==='1w'?7:14,a=perAnchor();
+    const diff=Math.round((new Date(dt.getFullYear(),dt.getMonth(),dt.getDate())-a)/864e5),k=Math.floor(diff/L)+n;
+    return `${ymd(new Date(a.getFullYear(),a.getMonth(),a.getDate()+k*L))}~${L}`;}
+  return ym(new Date(dt.getFullYear(),dt.getMonth()+n,1));
+}
+const periodOffset=n=>periodAt(new Date(),n);
 const wcls=w=>w===0?'sun':w===6?'sat':'';
 let MO=monthOffset(1);
-const dw=d=>`${d}(${WD[wday(MO,d)]})`;
+const dlab=d=>{const t=dateAt(MO,d);return oneMonth(MO)?String(t.getDate()):`${t.getMonth()+1}/${t.getDate()}`;};
+const dday=d=>oneMonth(MO)?dlab(d)+'日':dlab(d);
+const dnum=d=>{const t=dateAt(MO,d);return !oneMonth(MO)&&(d===1||t.getDate()===1)?`${t.getMonth()+1}/${t.getDate()}`:String(t.getDate());};
+const dmd=d=>{const t=dateAt(MO,d);return `${t.getMonth()+1}/${t.getDate()}`;};
+const dw=d=>`${dlab(d)}(${WD[wday(MO,d)]})`;
 const dlist=a=>a.length?a.map(dw).join('･'):'なし';
 const lineHref=t=>'https://line.me/R/msg/text/?'+encodeURIComponent(t);
 /* LINEを開くとき、戻ってきたら元の位置に戻す（「開きますか」の画面のあとで一番上に戻されないように） */
@@ -467,7 +501,7 @@ function hols(y){
     if(s.has(key(p))&&s.has(key(n)))s.add(key(dt));}
   return HC[y]=s;
 }
-const isHol=d=>hols(+MO.slice(0,4)).has(MO+'-'+pad(d));
+const isHol=d=>{const t=dateAt(MO,d);return hols(t.getFullYear()).has(ymd(t));};
 
 function copyText(text,toastEl,preEl){
   const done=()=>{toastEl.textContent='コピーしました';toastEl.style.color='';setTimeout(()=>toastEl.textContent='',2500);};
@@ -580,10 +614,10 @@ async function staffSubmit(code){
     const f=wday(MO,1);let h=[...WD].map((w,i)=>`<button class="wd ${wcls(i)}" data-wd="${i}" aria-label="${w}曜日をまとめて塗る">${w}</button>`).join('');
     for(let i=0;i<f;i++)h+='<div></div>';
     for(let d=1;d<=n;d++){const w=wday(MO,d),c=wcls(isHol(d)?0:w);
-      if(!anyOpen(d)){h+=`<div class="dayoff"><span class="n">${d}</span><span class="p">休</span></div>`;continue;}
+      if(!anyOpen(d)){h+=`<div class="dayoff"><span class="n">${dnum(d)}</span><span class="p">休</span></div>`;continue;}
       const code=st.codes[d-1],i=info(code);
       const only=S.slots.length>1&&S.slots.some((_,k)=>!isOpen(d,k))?S.slots.map((_,k)=>isOpen(d,k)?slotShort(k):'').filter(Boolean).join('')+'のみ':'';
-      h+=`<button class="day ${c} ${focus===d?'focus':''}" data-d="${d}" aria-label="${mShort(MO)}${d}日${i?' '+esc(i.n):''}">${nt[d]?'<span class="ev">★</span>':''}${ex[d]?'<span class="ex"></span>':''}<span class="n">${d}</span>`+
+      h+=`<button class="day ${c} ${focus===d?'focus':''}" data-d="${d}" aria-label="${dw(d)}${i?' '+esc(i.n):''}">${nt[d]?'<span class="ev">★</span>':''}${ex[d]?'<span class="ex"></span>':''}<span class="n">${dnum(d)}</span>`+
         (code?`<span class="p ${cls(code)}">${esc(i.s)}</span>`:only?`<span class="only">${esc(only)}</span>`:'<span class="p"></span>')+`</button>`;}
     $('st-cal').innerHTML=h;
     const fx=focus&&ex[focus];
@@ -610,7 +644,7 @@ async function staffSubmit(code){
   $('st-make').onclick=()=>{
     if(!st.name){flash($('st-msg'),'名前を入れてください',true);$('st-name').focus();window.scrollTo({top:0,behavior:'smooth'});return;}
     const blank=[];for(let d=1;d<=n;d++)if(anyOpen(d)&&!st.codes[d-1])blank.push(d);
-    const toks=[];for(let d=1;d<=n;d++){const c=st.codes[d-1];if(c&&anyOpen(d))toks.push(d+'日'+(c==='X'?'×':info(c).s));}
+    const toks=[];for(let d=1;d<=n;d++){const c=st.codes[d-1];if(c&&anyOpen(d))toks.push(dday(d)+(c==='X'?'×':info(c).s));}
     const codes=st.codes.map((c,i)=>!c||!anyOpen(i+1)?'-':isT(c)?'T:'+encodeURIComponent(c.slice(2)):c).join(',');
     const memo=st.memo.trim().replace(/\s+/g,' ');
     const text=`【${mShort(MO)}シフト希望】${st.name}\n${toks.join(' ')||'（出られる日なし）'}${memo?'\nメモ：'+memo:''}\n#SHIFT|${MO}|${encodeURIComponent(st.name)}|${codes}|${encodeURIComponent(memo)}`;
@@ -683,8 +717,8 @@ async function staffView(code){
       rows[j].forEach((c,i)=>{if(!c)return;const d=i+1,inf=info(c);days++;h+=inf.h;
         rs.push(`<div class="r"><span class="dt">${dw(d)}</span><span class="k ${cls(c)}">${esc(inf.s)}</span><span class="t">${esc(isT(c)?c.slice(2):inf.t)}${nt[d]?'　★'+esc(nt[d]):''}</span></div>`);});
       $('vw-sum').textContent=`出勤 ${days}日 ／ 約${Math.round(h*10)/10}時間`;
-      $('vw-list').innerHTML=rs.join('')||'<p class="hint">今月の出勤はありません。</p>';}
-    let t='<tr><th class="nm">名前</th>';for(let d=1;d<=n;d++){const w=wday(MO,d);t+=`<th class="${wcls(isHol(d)?0:w)}">${d}<br>${WD[w]}</th>`;}t+='</tr>';
+      $('vw-list').innerHTML=rs.join('')||'<p class="hint">この期間の出勤はありません。</p>';}
+    let t='<tr><th class="nm">名前</th>';for(let d=1;d<=n;d++){const w=wday(MO,d);t+=`<th class="${wcls(isHol(d)?0:w)}">${dnum(d)}<br>${WD[w]}</th>`;}t+='</tr>';
     names.forEach((nm,k)=>{t+=`<tr class="${nm===me?'me':''}"><td class="nm">${esc(nm)}</td>`;
       for(let d=1;d<=n;d++){if(closed.has(d)){t+='<td class="cell off">休</td>';continue;}const c=rows[k][d-1];t+=`<td class="cell ${cls(c)}">${c?esc(info(c).s):''}</td>`;}t+='</tr>';});
     $('vw-tbl').innerHTML=t;
@@ -714,7 +748,7 @@ const TPL={
 };
 function settingsFrom(tk,store){const t=TPL[tk];return{store:store||'',pin:'',url:'',
   slots:t.slots.map(([n,st,en])=>({n,st,en})),pats:t.pats.map(([id,s,n,st,en,br])=>({id,s,n,st,en,br})),
-  used:t.pats.map(p=>p[0]).join(''),req:t.req.map(r=>r.slice()),closed:Array(8).fill(false)};}
+  used:t.pats.map(p=>p[0]).join(''),req:t.req.map(r=>r.slice()),closed:Array(8).fill(false),period:{type:'month',anchor:''}};}
 function blankMonth(m){return{month:m,subs:{},assign:{},over:{},extra:{},notes:{},undec:{},yes:{},reqOv:{},sample:false};}
 function normalizeM(){['subs','assign','over','extra','notes','undec','yes','reqOv'].forEach(k=>{if(!M[k])M[k]={};});}
 function sampleMonth(m){
@@ -724,7 +758,7 @@ function sampleMonth(m){
   const ids=S.pats.map(p=>p.id);
   names.forEach((nm,j)=>{const mine=[ids[j%ids.length],ids[(j+1)%ids.length],'O','X','X'];
     st.subs[nm]={codes:Array.from({length:n},()=>mine[Math.floor(rnd()*mine.length)]),memo:j===2?'土曜は早めに上がりたいです':''};});
-  st.notes[14]='団体予約';
+  st.notes[Math.min(14,n)]='団体予約';
   return st;
 }
 function save(){
@@ -762,7 +796,7 @@ function bootMgr(){
 $('lk-go').onclick=()=>{if($('lk-pin').value===S.pin){SS.set('kshift-ok','1');enterMgr();}else flash($('lk-msg'),'暗証番号がちがいます',true);};
 $('lk-pin').onkeydown=e=>{if(e.key==='Enter')$('lk-go').click();};
 function enterMgr(){
-  const m=DATA.cur||monthOffset(1);M=DATA.months[m]||blankMonth(m);normalizeM();MO=M.month;
+  const m=DATA.cur||periodOffset(1);M=DATA.months[m]||blankMonth(m);normalizeM();MO=M.month;
   showOnly('p-mgr');renderMgr();save();
 }
 
@@ -775,7 +809,7 @@ function openWelcome(){
 $('w-tpls').onclick=e=>{const b=e.target.closest('[data-tpl]');if(!b)return;wTpl=b.dataset.tpl;openWelcome();};
 $('w-go').onclick=()=>{
   S=settingsFrom(wTpl,$('w-store').value.trim());buildPM();
-  const m=monthOffset(1);DATA={v:1,S,months:{},cur:m};
+  const m=periodOffset(1);DATA={v:1,S,months:{},cur:m};
   M=$('w-sample').checked?sampleMonth(m):blankMonth(m);MO=m;
   save();openSettings(true);
 };
@@ -785,7 +819,7 @@ $('w-bkload').onclick=()=>{if(loadBackup($('w-bkin').value,$('w-bkmsg')))bootMgr
 let setFirst=false;
 function openSettings(first){setFirst=!!first;showOnly('p-set');renderSettings();window.scrollTo({top:0});}
 function renderSettings(){
-  $('s-store').value=S.store||'';$('s-url').value=S.url||'';$('s-pin').value=S.pin||'';
+  $('s-store').value=S.store||'';$('s-url').value=S.url||'';$('s-pin').value=S.pin||'';renderPeriod();
   $('s-url').placeholder=autoURL()||'例：https://〇〇.github.io/shift/';
   $('s-urlhint').textContent=autoURL()?'空のままなら、いま開いているページのURLを使います。':'このページを置いた場所のURLを入れてください。スタッフはこのURLから希望を出します。';
   $('s-slots').innerHTML=S.slots.map((s,k)=>`<div class="srow"><span class="lbl c-s${k}" style="border-radius:5px;padding:0 6px">枠${k+1}</span>
@@ -808,6 +842,19 @@ function renderSettings(){
   g+='<div class="rl">定休日</div>'+DT.map((w,i)=>`<input type="checkbox" data-f="cl.${i}" ${S.closed[i]?'checked':''} aria-label="${w}を定休日にする">`).join('');
   $('s-grid').innerHTML=g;
 }
+const PER=[['month','1か月ごと','1日〜月末'],['half','前半・後半','1〜15日／16日〜月末'],['2w','2週間ごと','始まりの日から14日ずつ'],['1w','1週間ごと','始まりの曜日から7日ずつ']];
+function renderPeriod(){
+  if(!S.period)S.period={type:'month',anchor:''};
+  const t=S.period.type;
+  $('s-period').innerHTML=PER.map(([v,l,d])=>`<button class="tpl" data-per="${v}" aria-pressed="${t===v}"><b>${l}</b><span>${d}</span></button>`).join('');
+  const needA=t==='1w'||t==='2w';$('s-anchorbox').hidden=!needA;
+  if(needA){if(!S.period.anchor)S.period.anchor=ymd(nextMonday());$('s-anchor').value=S.period.anchor;}
+  const keep=MO;const ks=[1,2].map(periodOffset);
+  const lab=k=>{MO=k;const a=`${dmd(1)}(${WD[wday(k,1)]})`,b=`${dmd(daysIn(k))}(${WD[wday(k,daysIn(k))]})`;return `${a}〜${b}`;};
+  $('s-periodhint').textContent=`次の期間：${lab(ks[0])}　その次：${lab(ks[1])}`;MO=keep;
+}
+$('s-period').addEventListener('click',e=>{const b=e.target.closest('[data-per]');if(!b)return;S.period.type=b.dataset.per;save();renderPeriod();});
+$('s-anchor').addEventListener('change',e=>{if(/^\d{4}-\d{2}-\d{2}$/.test(e.target.value)){S.period.anchor=e.target.value;save();renderPeriod();}});
 function patMeta(p){const i=PM[p.id]||{h:0,sl:[]};
   return `約${i.h}時間 ／ ${i.sl.length?i.sl.map(slotName).map(esc).join('・')+'の人数に数える':'<b style="color:var(--no)">どの枠にも重なっていません</b>'}`;}
 function refreshSet(){
@@ -844,8 +891,11 @@ function setDone(){
   const bad=S.pats.find(p=>!PM[p.id].sl.length);
   if(bad){flash($('s-msg'),`「${bad.n||bad.s}」がどの枠にも重なっていません。時間を確認してください`,true);return;}
   save();
-  if(!M){const m=DATA.cur||monthOffset(1);M=DATA.months[m]||blankMonth(m);normalizeM();}
-  if(setFirst&&M.sample&&!Object.keys(M.assign).length){M=sampleMonth(M.month);} // 見本は最新のパターンで作り直す
+  if(!M){const m=DATA.cur||periodOffset(1);M=DATA.months[m]||blankMonth(m);normalizeM();}
+  if(periodAt(pStart(M.month),0)!==M.month){ // 区切りを変えたら、新しい区切りの次の期間に切り替える（前のデータは残す）
+    const was=M.sample,want=periodOffset(1);if(was)delete DATA.months[M.month];
+    M=DATA.months[want]||(was?sampleMonth(want):blankMonth(want));normalizeM();ui.rOff.clear();ui.pick=null;
+  }else if(setFirst&&M.sample&&!Object.keys(M.assign).length){M=sampleMonth(M.month);} // 見本は最新のパターンで作り直す
   setFirst=false;MO=M.month;showOnly('p-mgr');renderMgr();save();window.scrollTo({top:0});
 }
 $('s-done').onclick=setDone;$('s-done2').onclick=setDone;
@@ -892,8 +942,8 @@ const dec1=s=>{try{return decodeURIComponent(s||'');}catch(e){return s||'';}};
 let diffOk=false,pendingTxt='';
 $('m-import').onclick=()=>{
   const txt=$('m-paste').value;let m;
-  const found=[],re=/#SHIFT\|(\d{4}-\d{2})\|([^\s|]*)\|([^\s|]+)(?:\|([^\s]*))?/g;while((m=re.exec(txt)))found.push(m);
-  const bf=[],bre=/#BOSHU\|(\d{4}-\d{2})\|([^\s|]*)\|([^\s|]*)(?:\|([^\s]*))?/g;while((m=bre.exec(txt)))bf.push(m);
+  const found=[],re=/#SHIFT\|(\d{4}-\d{2}(?:-\d{2}~\d{1,2})?)\|([^\s|]*)\|([^\s|]+)(?:\|([^\s]*))?/g;while((m=re.exec(txt)))found.push(m);
+  const bf=[],bre=/#BOSHU\|(\d{4}-\d{2}(?:-\d{2}~\d{1,2})?)\|([^\s|]*)\|([^\s|]*)(?:\|([^\s]*))?/g;while((m=bre.exec(txt)))bf.push(m);
   if(!found.length&&!bf.length){flash($('m-toast'),'希望の文字が見つかりませんでした。スタッフから届いたメッセージを全部貼ってください。',true);return;}
   if(!found.length){importBoshu(bf);return;}
   const ms=[...new Set(found.map(f=>f[1]))];
@@ -958,8 +1008,9 @@ function switchMonth(m){
   save();renderMgr();
 }
 function renderMonthSel(){
-  const ms=new Set([-1,0,1,2,3].map(monthOffset).concat(Object.keys(DATA.months),[M.month]));
-  $('m-month').innerHTML=[...ms].sort().map(m=>{const x=m===M.month?M:DATA.months[m],has=x&&!x.sample?Object.keys(x.subs||{}).length:0;
+  const offs=perType()==='1w'?[-1,0,1,2,3,4,5,6]:perType()==='2w'?[-1,0,1,2,3,4]:[-1,0,1,2,3];
+  const ms=new Set(offs.map(periodOffset).concat(Object.keys(DATA.months),[M.month]));
+  $('m-month').innerHTML=[...ms].sort((a,b)=>(pStart(a)-pStart(b))||(daysIn(b)-daysIn(a))).map(m=>{const x=m===M.month?M:DATA.months[m],has=x&&!x.sample?Object.keys(x.subs||{}).length:0;
     return `<option value="${m}" ${m===M.month?'selected':''}>${mLabel(m)}${has?'（希望 '+has+'人）':''}</option>`;}).join('');
 }
 $('m-month').onchange=e=>switchMonth(e.target.value);
@@ -1016,14 +1067,14 @@ function renderStaffList(){
 }
 function slotOfKey(v){return isT(v)?v.slice(2):v&&v[0]==='s'?slotName(+v.slice(1)):'';}
 function renderDays(){
-  const n=daysIn(MO);let h='';const mo=+MO.split('-')[1];
+  const n=daysIn(MO);let h='';
   for(let d=1;d<=n;d++){
     const w=wday(MO,d),q=req(d),c=counts(d),a=M.assign[d]||{},hol=isHol(d),b=baseOpen(d),so=svcOpen(d),closed=isClosed(d);
     const short=!closed&&isShort(d);
     if(ui.onlyShort&&!short)continue;
     {const r=ui.range,we=w===0||w===6||hol;if((r==='h1'&&d>15)||(r==='h2'&&d<16)||(r==='we'&&!we)||(r==='wd'&&we))continue;}
     const svcRow=`<div class="svc">`+S.slots.map((s,k)=>`<button class="btn ghost tiny" data-svc="${k}">${esc(s.n)}を${so[k]?'休みにする':'営業にする'}</button>`).join('')+`</div>`;
-    h+=`<div class="dc ${short?'short':''} ${closed?'closed':''}" data-d="${d}"><div class="hd"><span class="date ${hol?'sun':wcls(w)}">${mo}/${d}（${WD[w]}）</span>${hol?'<span class="tag">祝</span>':''}`;
+    h+=`<div class="dc ${short?'short':''} ${closed?'closed':''}" data-d="${d}"><div class="hd"><span class="date ${hol?'sun':wcls(w)}">${dmd(d)}（${WD[w]}）</span>${hol?'<span class="tag">祝</span>':''}`;
     if(closed){h+=`<span class="minor">${b.some(Boolean)?'臨時休業':'定休日'}</span></div>${svcRow}</div>`;continue;}
     S.slots.forEach((s,k)=>{const ov=(M.reqOv[d]||{})[k]!==undefined;
       if(so[k])h+=`<button class="cnt ${c[k]>=q[k]?'good':'bad'}" data-req="1" aria-label="${esc(s.n)}の必要人数を変える">${esc(slotShort(k))} ${c[k]}/${q[k]}${ov?' ✎':''}</button>`;
@@ -1093,7 +1144,7 @@ $('m-days').addEventListener('click',e=>{
 function renderTable(){
   const n=daysIn(MO),ns=names();
   if(!ns.length){$('m-table').innerHTML='<tr><td class="nm">まだデータがありません</td></tr>';return;}
-  let h='<tr><th class="nm">名前</th>';for(let d=1;d<=n;d++){const w=wday(MO,d);h+=`<th class="${wcls(isHol(d)?0:w)}">${d}<br>${WD[w]}</th>`;}h+='<th>日数</th><th>時間</th></tr>';
+  let h='<tr><th class="nm">名前</th>';for(let d=1;d<=n;d++){const w=wday(MO,d);h+=`<th class="${wcls(isHol(d)?0:w)}">${dnum(d)}<br>${WD[w]}</th>`;}h+='<th>日数</th><th>時間</th></tr>';
   h+='<tr><td class="nm minor">不足</td>';for(let d=1;d<=n;d++){if(isClosed(d)){h+='<td class="off"></td>';continue;}const q=req(d),c=counts(d),lack=q.reduce((s,v,k)=>s+Math.max(0,v-c[k]),0);h+=`<td style="color:var(--no)">${lack||''}</td>`;}h+='<td></td><td></td></tr>';
   for(const nm of ns){const o=hoursOf(nm);h+=`<tr><td class="nm">${esc(nm)}</td>`;
     for(let d=1;d<=n;d++){if(isClosed(d)){h+='<td class="cell off">休</td>';continue;}const k=(M.assign[d]||{})[nm];h+=`<td class="cell ${cls(k)}">${k?esc(info(k).s):''}</td>`;}
@@ -1170,7 +1221,7 @@ async function makeImage(d1,d2){
   const sc=2,cv=document.createElement('canvas');cv.width=W*sc;cv.height=H*sc;const c=cv.getContext('2d');c.scale(sc,sc);
   c.fillStyle='#ffffff';c.fillRect(0,0,W,H);c.textBaseline='middle';
   c.fillStyle='#23251f';c.font=`700 22px ${F}`;c.textAlign='left';
-  c.fillText(`${S.store?S.store+'　':''}${mLabel(MO)} シフト`+(d1>1||d2<daysIn(MO)?`（${d1}日〜${d2}日）`:''),pad,pad+titleH/2-6);
+  c.fillText(`${S.store?S.store+'　':''}${mLabel(MO)} シフト`+(d1>1||d2<daysIn(MO)?`（${dlab(d1)}〜${dlab(d2)}${oneMonth(MO)?'日':''}）`:''),pad,pad+titleH/2-6);
   const x0=pad,y0=pad+titleH,cx=d=>x0+nameW+(d-d1)*cellW;
   c.fillStyle='#f3f2ec';c.fillRect(x0,y0,W-pad*2,headH);
   c.font=`700 14px ${F}`;c.fillStyle='#23251f';c.textAlign='center';
@@ -1179,7 +1230,7 @@ async function makeImage(d1,d2){
     if(isClosed(d)){c.fillStyle='#e4e4e0';c.fillRect(x,y0,cellW,headH);}
     else if(hol||w===0){c.fillStyle='#fbe4e1';c.fillRect(x,y0,cellW,headH);}else if(w===6){c.fillStyle='#e4e9f8';c.fillRect(x,y0,cellW,headH);}
     c.fillStyle=hol||w===0?'#b0392d':w===6?'#34478f':'#23251f';
-    c.font=`700 16px ${F}`;c.fillText(String(d),x+cellW/2,y0+18);
+    c.font=`700 16px ${F}`;c.fillText(dnum(d),x+cellW/2,y0+18);
     c.font=`500 12px ${F}`;c.fillText(WD[w]+(hol?'祝':''),x+cellW/2,y0+36);
     if(M.notes[d]){c.fillStyle='#c98a0b';c.font=`700 11px ${F}`;c.fillText('★',x+cellW-8,y0+9);}}
   ns.forEach((nm,j)=>{const y=y0+headH+j*rowH;
@@ -1255,6 +1306,10 @@ function renderMgr(){
   MO=M.month;
   $('m-h1').textContent=(S.store?S.store+' ':'')+'シフト作成';document.title=(S.store?S.store+' ':'')+'シフトくみたて';
   renderMonthSel();
+  const long=daysIn(MO)>16;$('m-img2').hidden=!long;
+  if(!long&&(ui.range==='h1'||ui.range==='h2'))ui.range='all';
+  $('m-range').innerHTML=[['all','全部の日'],...(long?[['h1','前半（1〜15日目）'],['h2','後半（16日目〜）']]:[]),['we','土日祝だけ'],['wd','平日だけ']]
+    .map(([v,l])=>`<option value="${v}" ${ui.range===v?'selected':''}>${l}</option>`).join('');
   $('m-sample').hidden=!M.sample;
   $('m-legend').innerHTML=S.pats.map(p=>`<span class="${cls(p.id)}">${esc(PM[p.id].s)} ${esc(PM[p.id].t)}</span>`).join('')+'<span class="c-T">時間指定</span>';
   renderStaffList();renderDays();renderTable();renderShare();renderLink();
