@@ -207,7 +207,7 @@ details summary{cursor:pointer;font-weight:700}
     <div class="box">
       <label class="f">利用コード<input type="text" id="lc-code" placeholder="例：KMT-AB2C-D3EF" autocomplete="off" autocapitalize="characters" spellcheck="false"></label>
       <div class="row"><button class="btn" id="lc-go">はじめる</button><p class="toast" id="lc-msg"></p></div>
-      <p class="hint">購入したときにお渡しした利用コードを入れてください。入力は最初の1回だけです。</p>
+      <p class="hint">購入したときにお渡しした利用コードを入れてください。入力は最初の1回だけです。<a href="kumitate_guide.html" style="color:var(--accent)">使い方を見る</a></p>
       <p class="hint">スタッフの方は、店長からLINEで届いたリンクを開いてください。</p>
     </div>
   </section>
@@ -290,7 +290,7 @@ details summary{cursor:pointer;font-weight:700}
 
   <!-- 店長画面 -->
   <section id="p-mgr" class="panel" hidden>
-    <header><h1 id="m-h1">シフト作成</h1><button class="btn ghost small" id="m-set">お店の設定</button></header>
+    <header><h1 id="m-h1">シフト作成</h1><div class="row"><a class="btn ghost small" href="kumitate_guide.html">使い方</a><button class="btn ghost small" id="m-set">お店の設定</button></div></header>
     <div class="box">
       <label class="f">シフトを作る月<select id="m-month"></select></label>
       <p class="hint" id="m-status"></p>
@@ -526,7 +526,7 @@ function patLegend(){return S.pats.map(p=>`${PM[p.id].s}=${PM[p.id].t}`).join('�
 const ST=$('p-staff');
 let preview=null; // 店長が「スタッフの画面を見る」で開いたとき
 function staffShell(title){
-  return `<header><h1>${esc(title)}</h1><span class="store">${esc(SNAME)}</span></header>`+
+  return `<header><h1>${esc(title)}</h1><span class="store">${esc(SNAME)}　<a href="kumitate_guide.html#staff" style="color:var(--accent)">使い方</a></span></header>`+
     (preview?`<div class="banner"><span><b>見本表示中</b>：スタッフにはこう見えます。</span><button class="btn small ghost" data-back="1">店長画面に戻る</button></div>`:'');
 }
 let SNAME='';
